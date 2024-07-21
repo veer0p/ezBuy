@@ -5,10 +5,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start":"node dist/app.js",
+    "start": "node dist/app.js",
     "build": "tsc",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "dev": "nodemon dist/app.js"
   },
   "author": "",
   "license": "ISC",
@@ -21,7 +21,9 @@
     "mongoose": "^8.5.1",
     "react": "^18.3.1",
     "react-router-dom": "^6.25.1",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "validater": "^1.0.5",
+    "validator": "^13.12.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
