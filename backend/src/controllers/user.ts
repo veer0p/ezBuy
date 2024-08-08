@@ -1,17 +1,34 @@
 import { NextFunction, Request, Response } from "express";
 import { User } from "../model/user.js";
 import { NewUserRequestBody } from "../types/types.js";
-
-export const newUser = async (
-  req: Request<{}, {}, NewUserRequestBody>,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+import ErrorHandler from "../utils/utility-class.js";
+import { TryCatch } from "../middlewares/error.js";
+import { Params } from "react-router-dom";
+// Handler to create a new user
+export const newUser = TryCatch(
+  async (
+    req: Request<{}, {}, NewUserRequestBody>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { name, email, photo, gender, _id, dob } = req.body;
+
     console.log(name, email, photo, gender, _id, dob);
 
-    const user = await User.create({
+    const existingUser = await User.findById(_id);
+
+    if (existingUser) {
+      return res.status(200).json({
+        success: true,
+        message: `Welcome, ${existingUser.name}`,
+      });
+    }
+
+    if (!_id || !name || !photo || !gender || !dob) {
+      return next(new ErrorHandler("Please add all fields", 400));
+    }
+
+    const newUser = await User.create({
       name,
       email,
       photo,
@@ -20,14 +37,50 @@ export const newUser = async (
       dob: new Date(dob),
     });
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
-      message: `welcome,${user.name}`,
-    });
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: error,
+      message: `Welcome, ${newUser.name}`,
     });
   }
-};
+);
+
+// Handler to get all users
+export const getAllUsers = TryCatch(async (req, res, next) => {
+  const users = await User.find({});
+
+  return res.status(200).json({
+    success: true,
+    users,
+  });
+});
+
+// Handler to get a specific user by ID
+export const getUser = TryCatch(
+  async (req: Request<Params>, res: Response, next: NextFunction) => {
+    const id = req.params.id; // Now TypeScript knows `id` exists on `req.params`
+    const user = await User.findById(id);
+
+    if (!user) return next(new ErrorHandler("Invalid Id", 400));
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  }
+);
+
+export const deleteUser = TryCatch(
+  async (req: Request<Params>, res: Response, next: NextFunction) => {
+    const id = req.params.id; // Now TypeScript knows `id` exists on `req.params`
+    const user = await User.findById(id);
+
+    if (!user) return next(new ErrorHandler("Invalid Id", 400));
+
+    await user.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "user Deleted Successfully",
+    });
+  }
+);

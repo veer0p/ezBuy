@@ -25,7 +25,6 @@ const schema = new mongoose.Schema(
       required: [true, "Please enter your Name"],
     },
     email: {
-      // Fix the typo here
       type: String,
       unique: [true, "Email already exists"],
       required: [true, "Please enter your Email"],
