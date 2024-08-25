@@ -1,11 +1,12 @@
 import mongoose from "mongoose";
 import { Product } from "../model/product.js";
 import { myCache } from "../app.js";
-import { invalidateCacheProps } from "../types/types.js";
+import { invalidateCacheProps, orderItemType } from "../types/types.js";
+import { Order } from "../model/order.js";
 
-export const connectDB = () => {
+export const connectDB = (uri: string) => {
   mongoose
-    .connect("mongodb://localhost:27017", {
+    .connect(uri, {
       dbName: "ezBuy",
     })
     .then((c) => console.log(`DB Connected to ${c.connection.host}`))
@@ -16,6 +17,8 @@ export const invalidateCache = async ({
   product,
   order,
   admin,
+  userId,
+  orderId,
 }: invalidateCacheProps) => {
   if (product) {
     const productKeys: string[] = [
@@ -33,7 +36,25 @@ export const invalidateCache = async ({
     myCache.del(productKeys);
   }
   if (order) {
+    const orderKeys: string[] = [
+      "all-orders",
+      `my-orders-${userId}`,
+      `order-${orderId}`,
+    ];
+
+    myCache.del(orderKeys);
   }
   if (admin) {
+    // Add logic for admin-related cache invalidation if needed
+  }
+};
+
+export const reduceStock = async (orderItems: orderItemType[]) => {
+  for (let i = 0; i < orderItems.length; i++) {
+    const order = orderItems[i];
+    const product = await Product.findById(order.productId);
+    if (!product) throw new Error("Product Not Found");
+    product.stock -= order.quantity;
+    await product.save();
   }
 };
