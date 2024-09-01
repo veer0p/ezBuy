@@ -38,13 +38,14 @@ export interface BaseQuery {
   category?: string;
 }
 
-export type invalidateCacheProps = {
+export interface invalidateCacheProps {
   product?: boolean;
   order?: boolean;
   admin?: boolean;
   userId?: string;
   orderId?: string;
-};
+  user?: boolean;
+}
 
 export interface orderItemType {
   name: string;

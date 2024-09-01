@@ -4,6 +4,7 @@ import { errorMiddleware } from "./middlewares/error.js";
 import NodeCache from "node-cache";
 import { config } from "dotenv";
 import morgan from "morgan";
+import Stripe from "stripe";
 
 //Importing Routes
 import productRoute from "./routes/product.js";
@@ -21,8 +22,12 @@ console.log(process.env.PORT);
 const port = process.env.PORT || 4000;
 // const mongoURI = process.env.MONGO_URI;
 const mongoURI = "mongodb://localhost:27017";
+const stripeKey = "69";
+//will integrate late because stripe has invite only businesses for india.
 
 connectDB(mongoURI);
+
+export const stripe = new Stripe(stripeKey);
 
 export const myCache = new NodeCache({});
 

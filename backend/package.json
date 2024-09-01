@@ -23,6 +23,7 @@
     "node-cache": "^5.1.2",
     "react": "^18.3.1",
     "react-router-dom": "^6.25.1",
+    "stripe": "^16.9.0",
     "typescript": "^5.5.3",
     "validater": "^1.0.5",
     "validator": "^13.12.0"

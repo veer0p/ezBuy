@@ -19,33 +19,59 @@ export const invalidateCache = async ({
   admin,
   userId,
   orderId,
-}: invalidateCacheProps) => {
+  user, // New: to handle user-specific caches
+}: invalidateCacheProps & { user?: boolean }) => {
+  // Invalidate Product-related caches
   if (product) {
     const productKeys: string[] = [
       "latest-product",
       "categories",
       "all-products",
+      "admin-stats",
+      "admin-pie-charts",
+      "admin-bar-charts",
+      "admin-line-charts",
     ];
 
     const products = await Product.find({}).select("_id");
 
-    products.forEach((i) => {
-      productKeys.push(`product-${i._id}`);
+    products.forEach((prod) => {
+      productKeys.push(`product-${prod._id}`);
     });
 
     myCache.del(productKeys);
   }
+
+  // Invalidate Order-related caches
   if (order) {
     const orderKeys: string[] = [
       "all-orders",
+      "admin-stats",
+      "admin-pie-charts",
       `my-orders-${userId}`,
       `order-${orderId}`,
     ];
 
     myCache.del(orderKeys);
   }
+
+  // Invalidate User-related caches
+  if (user) {
+    const userKeys: string[] = ["all-users", "admin-stats", `user-${userId}`];
+
+    myCache.del(userKeys);
+  }
+
+  // Invalidate Admin-related caches
   if (admin) {
-    // Add logic for admin-related cache invalidation if needed
+    const adminKeys: string[] = [
+      "admin-stats",
+      "admin-pie-charts",
+      "admin-bar-charts",
+      "admin-line-charts",
+    ];
+
+    myCache.del(adminKeys);
   }
 };
 
@@ -60,10 +86,43 @@ export const reduceStock = async (orderItems: orderItemType[]) => {
 };
 
 export const calculatePercentage = (
-  thisMonth: number,
-  lastMonth: number
+  currentValue: number,
+  previousValue: number
 ): string => {
-  if (lastMonth === 0) return "100";
-  const percent = ((thisMonth - lastMonth) / lastMonth) * 100;
-  return percent.toFixed(0);
+  console.log(
+    `Current Value: ${currentValue}, Previous Value: ${previousValue}`
+  );
+
+  if (previousValue === 0) {
+    if (currentValue === 0) return "0";
+    return "100";
+  }
+
+  const change = (currentValue / previousValue) * 100;
+  return change.toFixed(2);
+};
+
+export const getInventories = async ({
+  categories,
+  productCount,
+}: {
+  categories: string[];
+  productCount: number;
+}): Promise<Record<string, number>[]> => {
+  const categoriesCountPromise = categories.map((category) =>
+    Product.countDocuments({ category })
+  );
+
+  const categoriesCount = await Promise.all(categoriesCountPromise);
+
+  const categoryCount = categories.map((category, i) => {
+    const count = categoriesCount[i] || 0;
+    const percentage = productCount > 0 ? (count / productCount) * 100 : 0;
+
+    return {
+      [category]: Math.round(percentage),
+    };
+  });
+
+  return categoryCount;
 };

@@ -9,29 +9,50 @@ export const connectDB = (uri) => {
         .then((c) => console.log(`DB Connected to ${c.connection.host}`))
         .catch((e) => console.log(e));
 };
-export const invalidateCache = async ({ product, order, admin, userId, orderId, }) => {
+export const invalidateCache = async ({ product, order, admin, userId, orderId, user, // New: to handle user-specific caches
+ }) => {
+    // Invalidate Product-related caches
     if (product) {
         const productKeys = [
             "latest-product",
             "categories",
             "all-products",
+            "admin-stats",
+            "admin-pie-charts",
+            "admin-bar-charts",
+            "admin-line-charts",
         ];
         const products = await Product.find({}).select("_id");
-        products.forEach((i) => {
-            productKeys.push(`product-${i._id}`);
+        products.forEach((prod) => {
+            productKeys.push(`product-${prod._id}`);
         });
         myCache.del(productKeys);
     }
+    // Invalidate Order-related caches
     if (order) {
         const orderKeys = [
             "all-orders",
+            "admin-stats",
+            "admin-pie-charts",
             `my-orders-${userId}`,
             `order-${orderId}`,
         ];
         myCache.del(orderKeys);
     }
+    // Invalidate User-related caches
+    if (user) {
+        const userKeys = ["all-users", "admin-stats", `user-${userId}`];
+        myCache.del(userKeys);
+    }
+    // Invalidate Admin-related caches
     if (admin) {
-        // Add logic for admin-related cache invalidation if needed
+        const adminKeys = [
+            "admin-stats",
+            "admin-pie-charts",
+            "admin-bar-charts",
+            "admin-line-charts",
+        ];
+        myCache.del(adminKeys);
     }
 };
 export const reduceStock = async (orderItems) => {
@@ -44,9 +65,25 @@ export const reduceStock = async (orderItems) => {
         await product.save();
     }
 };
-export const calculatePercentage = (thisMonth, lastMonth) => {
-    if (lastMonth === 0)
+export const calculatePercentage = (currentValue, previousValue) => {
+    console.log(`Current Value: ${currentValue}, Previous Value: ${previousValue}`);
+    if (previousValue === 0) {
+        if (currentValue === 0)
+            return "0";
         return "100";
-    const percent = ((thisMonth - lastMonth) / lastMonth) * 100;
-    return percent.toFixed(0);
+    }
+    const change = (currentValue / previousValue) * 100;
+    return change.toFixed(2);
+};
+export const getInventories = async ({ categories, productCount, }) => {
+    const categoriesCountPromise = categories.map((category) => Product.countDocuments({ category }));
+    const categoriesCount = await Promise.all(categoriesCountPromise);
+    const categoryCount = categories.map((category, i) => {
+        const count = categoriesCount[i] || 0;
+        const percentage = productCount > 0 ? (count / productCount) * 100 : 0;
+        return {
+            [category]: Math.round(percentage),
+        };
+    });
+    return categoryCount;
 };
